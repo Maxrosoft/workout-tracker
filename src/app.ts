@@ -2,6 +2,7 @@ import express, { Express } from "express";
 import "dotenv/config";
 import sequelize from "./config/sequelize";
 import authRouter from "./routes/auth";
+import workoutRouter from "./routes/workout";
 import { errorHandler } from "./middlewares/errorHandler";
 
 const PORT: number | string = process.env.PORT || 3000;
@@ -16,6 +17,7 @@ export interface SuccessMessageI {
 const app: Express = express();
 app.use(express.json());
 app.use(authRouter);
+app.use(workoutRouter);
 app.use(errorHandler);
 
 (async () => {

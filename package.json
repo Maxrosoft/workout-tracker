@@ -10,8 +10,6 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "@types/bcrypt": "^5.0.2",
-        "@types/sequelize": "^4.28.20",
         "bcrypt": "^5.1.1",
         "dotenv": "^16.4.7",
         "express": "^4.21.2",
@@ -21,9 +19,16 @@
         "sequelize": "^6.37.5"
     },
     "devDependencies": {
+        "@types/chai": "^5.0.1",
         "@types/express": "^5.0.0",
+        "@types/bcrypt": "^5.0.2",
+        "@types/sequelize": "^4.28.20",
         "@types/jsonwebtoken": "^9.0.9",
+        "@types/supertest": "^6.0.2",
+        "chai": "^5.2.0",
+        "mocha": "^11.1.0",
         "nodemon": "^3.1.9",
+        "supertest": "^7.0.0",
         "tsx": "^4.19.3",
         "typescript": "^5.7.3"
     }
