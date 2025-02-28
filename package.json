@@ -4,7 +4,8 @@
     "description": "",
     "main": "./src/app.ts",
     "scripts": {
-        "start": "nodemon ./src/app.ts"
+        "start": "nodemon ./src/app.ts",
+        "test": "tsx ./node_modules/.bin/mocha ./tests/workoutTracker.test.ts"
     },
     "keywords": [],
     "author": "",
@@ -19,11 +20,12 @@
         "sequelize": "^6.37.5"
     },
     "devDependencies": {
+        "@types/bcrypt": "^5.0.2",
         "@types/chai": "^5.0.1",
         "@types/express": "^5.0.0",
-        "@types/bcrypt": "^5.0.2",
-        "@types/sequelize": "^4.28.20",
         "@types/jsonwebtoken": "^9.0.9",
+        "@types/mocha": "^10.0.10",
+        "@types/sequelize": "^4.28.20",
         "@types/supertest": "^6.0.2",
         "chai": "^5.2.0",
         "mocha": "^11.1.0",
