@@ -4,16 +4,18 @@ import express from "express";
 import workoutRouter from "../src/routes/workout";
 import authRouter from "../src/routes/auth";
 import User from "../src/models/User";
+import cookieParser from "cookie-parser";
 
 describe("Workout Tracker API", () => {
     const app = express();
 
     app.use(express.json());
+    app.use(cookieParser());
     app.use(authRouter);
     app.use(workoutRouter);
 
-    let token = "";
     let userId = "";
+    let token = "";
 
     before(async () => {
         const signupPayload = {
@@ -23,10 +25,19 @@ describe("Workout Tracker API", () => {
             password: "test",
         };
 
-        const signupResponse = await request(app).post("/signup").set("accept", "application/json").send(signupPayload);
-
-        token = signupResponse.body.data.token;
+        const signupResponse: any = await request(app)
+            .post("/signup")
+            .set("accept", "application/json")
+            .send(signupPayload);
         userId = signupResponse.body.data.id;
+        const cookies = signupResponse.headers["set-cookie"];
+
+        if (cookies) {
+            token = cookies
+                .find((c: string) => c.startsWith("token="))
+                ?.split(";")[0]
+                .split("=")[1];
+        }
     });
 
     it("should create a workout", async () => {
@@ -46,7 +57,7 @@ describe("Workout Tracker API", () => {
         const response = await request(app)
             .post("/workout")
             .set("accept", "application/json")
-            .set("Authorization", `Bearer ${token}`)
+            .set("Cookie", `token=${token}`)
             .send(workoutPayload);
 
         expect(response.status).to.equal(201);

@@ -26,7 +26,7 @@ app.use(errorHandler);
 
 (async () => {
     try {
-        await sequelize.sync({force: true});
+        await sequelize.sync();
         console.log("Connection has been established successfully");
         app.listen(PORT, () => {
             console.log(`App is listening on port ${PORT}`);
