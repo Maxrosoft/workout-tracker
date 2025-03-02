@@ -116,6 +116,50 @@ describe("Workout Tracker API", () => {
         expect(response.body.data.exercises.length).to.be.greaterThan(0);
     });
 
+    it("should add a schedule", async () => {
+        const schedulePayload = {
+            "date": "2025-03-02",
+            "time": "18:00:00"
+        };
+        
+        const response = await request(app)
+            .post(`/workout/${workoutId}/schedule`)
+            .set("accept", "application/json")
+            .set("Cookie", `token=${token}`)
+            .send(schedulePayload);
+
+        expect(response.status).to.equal(200);
+        expect(response.body).to.have.property("type");
+        expect(response.body.type).to.equal("success");
+        expect(response.body).to.have.property("message");
+        expect(response.body.message).to.equal("Schedule added successfully");
+        expect(response.body).to.have.property("code");
+        expect(response.body.code).to.equal(200);
+
+        expect(response.body).to.have.property("data");
+        expect(response.body.data).to.have.property("id");
+        expect(response.body.data).to.have.property("name");
+        expect(response.body.data).to.have.property("UserId");
+        expect(response.body.data).to.have.property("schedule");
+        expect(response.body.data.schedule).to.have.property("date");
+        expect(response.body.data.schedule).to.have.property("time");
+    });
+
+    it("should delete a workout", async () => {
+        const response = await request(app)
+            .delete(`/workout/${workoutId}`)
+            .set("accept", "application/json")
+            .set("Cookie", `token=${token}`)
+
+        expect(response.status).to.equal(200);
+        expect(response.body).to.have.property("type");
+        expect(response.body.type).to.equal("success");
+        expect(response.body).to.have.property("message");
+        expect(response.body.message).to.equal("Workout deleted successfully");
+        expect(response.body).to.have.property("code");
+        expect(response.body.code).to.equal(200);
+    });
+
     after(async () => {
         if (userId) {
             await User.destroy({ where: { id: userId } });

@@ -3,6 +3,7 @@ import { ErrorMessageI } from "../middlewares/errorHandler";
 import { SuccessMessageI } from "../app";
 import Workout from "../models/Workout";
 import Exercise from "../models/Exercise";
+import Schedule from "../models/Schedule";
 import sequelize from "../config/sequelize";
 
 class WorkoutController {
@@ -82,7 +83,12 @@ class WorkoutController {
                     await Exercise.destroy({ where: { WorkoutId: foundWorkout.id } });
                     for (let exercise of exercises) {
                         if (
-                            !(exercise.name && exercise.numberOfSets && exercise.repetitionsPerSet && exercise.muscleGroup)
+                            !(
+                                exercise.name &&
+                                exercise.numberOfSets &&
+                                exercise.repetitionsPerSet &&
+                                exercise.muscleGroup
+                            )
                         ) {
                             const errorMessage: ErrorMessageI = {
                                 type: "error",
@@ -120,8 +126,89 @@ class WorkoutController {
                     res.status(successMessage.code).send(successMessage);
                 } catch (error) {
                     await t.rollback();
+                    return next(error);
                 }
-                
+            } else {
+                const errorMessage: ErrorMessageI = { type: "error", message: "Workout not found", code: 404 };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async deleteWorkout(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = (req as any).userId;
+            const { workoutId } = req.params;
+
+            if (isNaN(+workoutId)) {
+                const errorMessage: ErrorMessageI = { type: "error", message: "Invalid id", code: 400 };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+
+            const deletedWorkout = await Workout.findOne({ where: { UserId: userId, id: workoutId } });
+            if (deletedWorkout) {
+                await deletedWorkout.destroy();
+                const successMessage: SuccessMessageI = {
+                    type: "success",
+                    message: "Workout deleted successfully",
+                    code: 200,
+                };
+                res.status(successMessage.code).send(successMessage);
+            } else {
+                const errorMessage: ErrorMessageI = { type: "error", message: "Workout not found", code: 404 };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async addSchedule(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = (req as any).userId;
+            const { workoutId } = req.params;
+
+            const { date, time } = req.body;
+
+            if (!date || !time) {
+                const errorMessage: ErrorMessageI = { type: "error", message: "Missing required parameter", code: 400 };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+
+            if (isNaN(+workoutId)) {
+                const errorMessage: ErrorMessageI = { type: "error", message: "Invalid id", code: 400 };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+
+            const foundWorkout: any = await Workout.findOne({ where: { UserId: userId, id: workoutId } });
+            if (foundWorkout) {
+                const t = await sequelize.transaction();
+                try {
+                    await Schedule.destroy({ where: { WorkoutId: foundWorkout.id } });
+                    const createdSchedule: any = await Schedule.create({ date, time, WorkoutId: foundWorkout.id });
+
+                    await t.commit();
+
+                    if (createdSchedule) {
+                        const successMessage: SuccessMessageI = {
+                            type: "success",
+                            message: "Schedule added successfully",
+                            data: {
+                                id: foundWorkout.id,
+                                name: foundWorkout.name,
+                                UserId: foundWorkout.UserId,
+                                schedule: createdSchedule,
+                            },
+                            code: 200,
+                        };
+                        res.status(successMessage.code).send(successMessage);
+                    }
+                } catch (error) {
+                    await t.rollback();
+                    return next(error);
+                }
             } else {
                 const errorMessage: ErrorMessageI = { type: "error", message: "Workout not found", code: 404 };
                 return res.status(errorMessage.code).send(errorMessage);
