@@ -14,8 +14,9 @@ describe("Workout Tracker API", () => {
     app.use(authRouter);
     app.use(workoutRouter);
 
-    let userId = "";
-    let token = "";
+    let userId: string = "";
+    let token: string = "";
+    let workoutId: string = "";
 
     before(async () => {
         const signupPayload = {
@@ -67,6 +68,45 @@ describe("Workout Tracker API", () => {
         expect(response.body.message).to.equal("Workout created successfully");
         expect(response.body).to.have.property("code");
         expect(response.body.code).to.equal(201);
+
+        expect(response.body).to.have.property("data");
+        expect(response.body.data).to.have.property("id");
+
+        workoutId = response.body.data.id;
+
+        expect(response.body.data).to.have.property("name");
+        expect(response.body.data).to.have.property("UserId");
+        expect(response.body.data).to.have.property("exercises");
+        expect(response.body.data.exercises.length).to.be.greaterThan(0);
+    });
+
+    it("should update a workout", async () => {
+        const workoutPayload = {
+            name: "Updated Workout",
+            exercises: [
+                {
+                    name: "Do leetcode, stupid nerd! AGAIN, BUT MORE!",
+                    description: "2 Hard problem, 8 Medium problems, 4 Easy problems",
+                    numberOfSets: 2,
+                    repetitionsPerSet: 7,
+                    muscleGroup: "arms",
+                },
+            ],
+        };
+
+        const response = await request(app)
+            .put(`/workout/${workoutId}`)
+            .set("accept", "application/json")
+            .set("Cookie", `token=${token}`)
+            .send(workoutPayload);
+
+        expect(response.status).to.equal(200);
+        expect(response.body).to.have.property("type");
+        expect(response.body.type).to.equal("success");
+        expect(response.body).to.have.property("message");
+        expect(response.body.message).to.equal("Workout updated successfully");
+        expect(response.body).to.have.property("code");
+        expect(response.body.code).to.equal(200);
 
         expect(response.body).to.have.property("data");
         expect(response.body.data).to.have.property("id");
