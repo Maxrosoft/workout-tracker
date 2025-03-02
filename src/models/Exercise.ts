@@ -31,7 +31,8 @@ const Exercise = sequelize.define("Exercise", {
     },
 }, { tableName: "Exercises", timestamps: false });
 
-Exercise.belongsTo(Workout, { foreignKey: "WorkoutId" }); 
-Workout.hasMany(Exercise, { foreignKey: "WorkoutId" });
+Exercise.belongsTo(Workout, { foreignKey: "WorkoutId", onDelete: "CASCADE", hooks: true });
+Workout.hasMany(Exercise, { foreignKey: "WorkoutId", onDelete: "CASCADE" });
 
 export default Exercise;
+

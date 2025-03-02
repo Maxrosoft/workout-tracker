@@ -16,10 +16,11 @@ const Comment = sequelize.define("Comment", {
     },
 }, { tableName: "Comments", timestamps: true });
 
-Comment.belongsTo(Workout, { foreignKey: "WorkoutId" }); 
-Workout.hasMany(Comment, { foreignKey: "WorkoutId" });
+Comment.belongsTo(Workout, { foreignKey: "WorkoutId", onDelete: "CASCADE", hooks: true });
+Workout.hasMany(Comment, { foreignKey: "WorkoutId", onDelete: "CASCADE" });
 
-Comment.belongsTo(User, { foreignKey: "UserId" }); 
-User.hasMany(Comment, { foreignKey: "UserId" });
+Comment.belongsTo(User, { foreignKey: "UserId", onDelete: "CASCADE", hooks: true });
+User.hasMany(Comment, { foreignKey: "UserId", onDelete: "CASCADE" });
 
 export default Comment;
+

@@ -1,13 +1,28 @@
 import { Request, Response, NextFunction } from "express";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
 import { ErrorMessageI } from "../middlewares/errorHandler";
 import { SuccessMessageI } from "../app";
 import "dotenv/config";
 
+const PASSWORD_SECRET = process.env.PASSWORD_SECRET as string;
+const TOKEN_SECRET = process.env.TOKEN_SECRET as string;
+
 function generateAccessToken(id: number) {
-    return jwt.sign({ id }, process.env.TOKEN_SECRET as string, { expiresIn: "8h" });
+    return jwt.sign({ id }, TOKEN_SECRET, { expiresIn: "8h" });
+}
+
+async function hashPassword(password: string): Promise<string> {
+    const hmac = crypto.createHmac("sha256", PASSWORD_SECRET).update(password).digest("hex");
+    const saltRounds = 10;
+    return await bcrypt.hash(hmac, saltRounds);
+}
+
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+    const hmac = crypto.createHmac("sha256", PASSWORD_SECRET).update(password).digest("hex");
+    return await bcrypt.compare(hmac, hashedPassword);
 }
 
 class AuthController {
@@ -19,9 +34,7 @@ class AuthController {
                 return res.status(errorMessage.code).send(errorMessage);
             }
 
-            const saltRounds: number = 10;
-            const salt = await bcrypt.genSalt(saltRounds);
-            const hashedPassword = await bcrypt.hash(password, salt);
+            const hashedPassword = await hashPassword(password);
 
             const createdUser: any = await User.create({
                 email,
@@ -31,7 +44,12 @@ class AuthController {
             });
 
             const token = generateAccessToken(createdUser.id);
-            res.setHeader("Authorization", `Bearer ${token}`);
+            res.cookie("token", token, {
+                httpOnly: true,
+                secure: !req.hostname.includes("localhost"),
+                sameSite: "strict",
+                maxAge: 8 * 60 * 60 * 1000,
+            });
 
             const successMessage: SuccessMessageI = {
                 type: "success",
@@ -41,7 +59,6 @@ class AuthController {
                     email: createdUser.email,
                     firstName: createdUser.firstName,
                     lastName: createdUser.lastName,
-                    token
                 },
                 code: 201,
             };
@@ -55,42 +72,32 @@ class AuthController {
         try {
             const { email, password } = req.body;
             if (!(email && password)) {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Missing required parameter", code: 400 };
-                return res.status(errorMessage.code).send(errorMessage);
+                return res.status(400).json({ error: "Missing required parameter" });
             }
 
             const foundUser: any = await User.findOne({ where: { email } });
-            if (foundUser) {
-                const storedHashedPassword = foundUser.hashedPassword;
-                const comparison = await bcrypt.compare(password, storedHashedPassword);
-                if (comparison) {
-                    const token = generateAccessToken(foundUser.id);
-                    res.setHeader("Authorization", `Bearer ${token}`);
-                    const successMessage: SuccessMessageI = {
-                        type: "success",
-                        message: "User logged in successfully",
-                        data: {
-                            id: foundUser.id,
-                            email: foundUser.email,
-                            firstName: foundUser.firstName,
-                            lastName: foundUser.lastName,
-                            token
-                        },
-                        code: 200,
-                    };
-                    res.status(successMessage.code).send(successMessage);
-                } else {
-                    const errorMessage: ErrorMessageI = {
-                        type: "error",
-                        message: "Invalid email or password",
-                        code: 401,
-                    };
-                    return res.status(errorMessage.code).send(errorMessage);
-                }
-            } else {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Invalid email or password", code: 401 };
-                return res.status(errorMessage.code).send(errorMessage);
+            if (!foundUser || !(await verifyPassword(password, foundUser.hashedPassword))) {
+                return res.status(401).json({ error: "Invalid email or password" });
             }
+
+            const token = generateAccessToken(foundUser.id);
+
+            res.cookie("token", token, {
+                httpOnly: true,
+                secure: !req.hostname.includes("localhost"),
+                sameSite: "strict",
+                maxAge: 8 * 60 * 60 * 1000,
+            });
+
+            res.status(200).json({
+                message: "User logged in successfully",
+                user: {
+                    id: foundUser.id,
+                    email: foundUser.email,
+                    firstName: foundUser.firstName,
+                    lastName: foundUser.lastName,
+                },
+            });
         } catch (error) {
             next(error);
         }
@@ -98,7 +105,7 @@ class AuthController {
 
     async logout(req: Request, res: Response, next: NextFunction) {
         try {
-            res.setHeader("Authorization", "");
+            res.cookie("token", "", { maxAge: 0 });
             const successMessage: SuccessMessageI = { type: "success", message: "Logged out successfully", code: 200 };
             res.status(successMessage.code).send(successMessage);
         } catch (error) {

@@ -1,4 +1,6 @@
 import express, { Express } from "express";
+import cookieParser from "cookie-parser";
+import cors from "cors";
 import "dotenv/config";
 import sequelize from "./config/sequelize";
 import authRouter from "./routes/auth";
@@ -16,13 +18,15 @@ export interface SuccessMessageI {
 
 const app: Express = express();
 app.use(express.json());
+app.use(cookieParser());
+app.use(cors());
 app.use(authRouter);
 app.use(workoutRouter);
 app.use(errorHandler);
 
 (async () => {
     try {
-        await sequelize.sync();
+        await sequelize.sync({force: true});
         console.log("Connection has been established successfully");
         app.listen(PORT, () => {
             console.log(`App is listening on port ${PORT}`);

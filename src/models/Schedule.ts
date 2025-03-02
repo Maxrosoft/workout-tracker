@@ -23,8 +23,8 @@ const Schedule = sequelize.define(
     { tableName: "Schedules", timestamps: false }
 );
 
-Schedule.belongsTo(Workout, { foreignKey: "WorkoutId" }); 
-Workout.hasMany(Schedule, { foreignKey: "WorkoutId" });
+Schedule.belongsTo(Workout, { foreignKey: "WorkoutId", onDelete: "CASCADE", hooks: true });
+Workout.hasMany(Schedule, { foreignKey: "WorkoutId", onDelete: "CASCADE" });
 
-Schedule.belongsTo(Workout);
 export default Schedule;
+
