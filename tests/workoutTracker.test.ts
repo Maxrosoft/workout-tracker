@@ -118,10 +118,10 @@ describe("Workout Tracker API", () => {
 
     it("should add a schedule", async () => {
         const schedulePayload = {
-            "date": "2025-03-02",
-            "time": "18:00:00"
+            date: "2025-03-02",
+            time: "18:00:00",
         };
-        
+
         const response = await request(app)
             .post(`/workout/${workoutId}/schedule`)
             .set("accept", "application/json")
@@ -145,11 +145,37 @@ describe("Workout Tracker API", () => {
         expect(response.body.data.schedule).to.have.property("time");
     });
 
+    it("should add a comment", async () => {
+        const commentPayload = {
+            content: "it sucks bro...",
+        };
+        const response = await request(app)
+            .post(`/workout/${workoutId}/comment`)
+            .set("accept", "application/json")
+            .set("Cookie", `token=${token}`)
+            .send(commentPayload);
+
+        expect(response.status).to.equal(201);
+        expect(response.body).to.have.property("type");
+        expect(response.body.type).to.equal("success");
+        expect(response.body).to.have.property("message");
+        expect(response.body.message).to.equal("Comment added successfully");
+        expect(response.body).to.have.property("code");
+        expect(response.body.code).to.equal(201);
+
+        expect(response.body).to.have.property("data");
+        expect(response.body.data).to.have.property("id");
+        expect(response.body.data).to.have.property("name");
+        expect(response.body.data).to.have.property("UserId");
+        expect(response.body.data).to.have.property("comments");
+        expect(response.body.data.comments.length).to.be.greaterThan(0);
+    });
+
     it("should delete a workout", async () => {
         const response = await request(app)
             .delete(`/workout/${workoutId}`)
             .set("accept", "application/json")
-            .set("Cookie", `token=${token}`)
+            .set("Cookie", `token=${token}`);
 
         expect(response.status).to.equal(200);
         expect(response.body).to.have.property("type");

@@ -4,6 +4,7 @@ import { SuccessMessageI } from "../app";
 import Workout from "../models/Workout";
 import Exercise from "../models/Exercise";
 import Schedule from "../models/Schedule";
+import Comment from "../models/Comment";
 import sequelize from "../config/sequelize";
 
 class WorkoutController {
@@ -12,7 +13,11 @@ class WorkoutController {
             const { name, exercises } = req.body;
             const userId = (req as any).userId;
             if (!name || !exercises || exercises.length === 0) {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Missing required parameter", code: 400 };
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Missing required parameter",
+                    code: 400,
+                };
                 return res.status(errorMessage.code).send(errorMessage);
             }
 
@@ -20,7 +25,14 @@ class WorkoutController {
             const createdExercises: any[] = [];
 
             for (let exercise of exercises) {
-                if (!(exercise.name && exercise.numberOfSets && exercise.repetitionsPerSet && exercise.muscleGroup)) {
+                if (
+                    !(
+                        exercise.name &&
+                        exercise.numberOfSets &&
+                        exercise.repetitionsPerSet &&
+                        exercise.muscleGroup
+                    )
+                ) {
                     createdWorkout.destroy();
                     const errorMessage: ErrorMessageI = {
                         type: "error",
@@ -65,7 +77,11 @@ class WorkoutController {
             const userId = (req as any).userId;
             const { workoutId } = req.params;
             if (!name || !exercises || exercises.length === 0) {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Missing required parameter", code: 400 };
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Missing required parameter",
+                    code: 400,
+                };
                 return res.status(errorMessage.code).send(errorMessage);
             }
             if (isNaN(+workoutId)) {
@@ -129,7 +145,11 @@ class WorkoutController {
                     return next(error);
                 }
             } else {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Workout not found", code: 404 };
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Workout not found",
+                    code: 404,
+                };
                 return res.status(errorMessage.code).send(errorMessage);
             }
         } catch (error) {
@@ -157,7 +177,11 @@ class WorkoutController {
                 };
                 res.status(successMessage.code).send(successMessage);
             } else {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Workout not found", code: 404 };
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Workout not found",
+                    code: 404,
+                };
                 return res.status(errorMessage.code).send(errorMessage);
             }
         } catch (error) {
@@ -173,7 +197,11 @@ class WorkoutController {
             const { date, time } = req.body;
 
             if (!date || !time) {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Missing required parameter", code: 400 };
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Missing required parameter",
+                    code: 400,
+                };
                 return res.status(errorMessage.code).send(errorMessage);
             }
 
@@ -187,7 +215,11 @@ class WorkoutController {
                 const t = await sequelize.transaction();
                 try {
                     await Schedule.destroy({ where: { WorkoutId: foundWorkout.id } });
-                    const createdSchedule: any = await Schedule.create({ date, time, WorkoutId: foundWorkout.id });
+                    const createdSchedule: any = await Schedule.create({
+                        date,
+                        time,
+                        WorkoutId: foundWorkout.id,
+                    });
 
                     await t.commit();
 
@@ -210,7 +242,62 @@ class WorkoutController {
                     return next(error);
                 }
             } else {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Workout not found", code: 404 };
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Workout not found",
+                    code: 404,
+                };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async addComment(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = (req as any).userId;
+            const { workoutId } = req.params;
+
+            const { content } = req.body;
+
+            if (isNaN(+workoutId)) {
+                const errorMessage: ErrorMessageI = { type: "error", message: "Invalid id", code: 400 };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+
+            if (!content) {
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Missing required parameter",
+                    code: 400,
+                };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+
+            const foundWorkout: any = await Workout.findOne({ where: { id: workoutId } });
+            
+            if (foundWorkout) {
+                await Comment.create({ content, WorkoutId: foundWorkout.id, UserId: userId });
+                const commentsOfWorkout: any[] = await Comment.findAll({ where: { WorkoutId: workoutId } });
+                const successMessage: SuccessMessageI = {
+                    type: "success",
+                    message: "Comment added successfully",
+                    data: {
+                        id: foundWorkout.id,
+                        name: foundWorkout.name,
+                        UserId: foundWorkout.UserId,
+                        comments: commentsOfWorkout,
+                    },
+                    code: 201,
+                };
+                res.status(successMessage.code).send(successMessage);
+            } else {
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Workout not found",
+                    code: 404,
+                };
                 return res.status(errorMessage.code).send(errorMessage);
             }
         } catch (error) {
