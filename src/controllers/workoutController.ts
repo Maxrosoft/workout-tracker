@@ -205,6 +205,19 @@ class WorkoutController {
                 return res.status(errorMessage.code).send(errorMessage);
             }
 
+            const dateTimeString = `${date}T${time}Z`;
+            const scheduleDate = new Date(dateTimeString);
+            const now = new Date();
+
+            if (scheduleDate.getTime() < now.getTime()) {
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Invalid date",
+                    code: 400,
+                };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+
             if (isNaN(+workoutId)) {
                 const errorMessage: ErrorMessageI = { type: "error", message: "Invalid id", code: 400 };
                 return res.status(errorMessage.code).send(errorMessage);
@@ -276,7 +289,7 @@ class WorkoutController {
             }
 
             const foundWorkout: any = await Workout.findOne({ where: { id: workoutId } });
-            
+
             if (foundWorkout) {
                 await Comment.create({ content, WorkoutId: foundWorkout.id, UserId: userId });
                 const commentsOfWorkout: any[] = await Comment.findAll({ where: { WorkoutId: workoutId } });

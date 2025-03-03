@@ -140,10 +140,32 @@ describe("Workout Tracker API", () => {
         expect(response.body.data.exercises.length).to.be.greaterThan(0);
     });
 
+    it("should reject past date", async () => {
+        const schedulePayload = {
+            date: "2000-01-01",
+            time: "00:00:00",
+        };
+
+        const response = await request(app)
+            .post(`/workout/${workoutId}/schedule`)
+            .set("accept", "application/json")
+            .set("Cookie", `token=${token}`)
+            .send(schedulePayload);
+
+        expect(response.status).to.equal(400);
+        expect(response.body).to.have.property("type");
+        expect(response.body.type).to.equal("error");
+        expect(response.body).to.have.property("message");
+        expect(response.body.message).to.equal("Invalid date");
+        expect(response.body).to.have.property("code");
+        expect(response.body.code).to.equal(400);
+    });
+
+
     it("should add a schedule", async () => {
         const schedulePayload = {
-            date: "2025-03-02",
-            time: "18:00:00",
+            date: "2100-01-01",
+            time: "00:00:00",
         };
 
         const response = await request(app)

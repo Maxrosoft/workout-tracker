@@ -17,7 +17,7 @@ const Schedule = sequelize.define(
         },
         time: {
             type: DataTypes.TIME,
-            allowNull: true,
+            allowNull: false,
         },
     },
     { tableName: "Schedules", timestamps: false }
