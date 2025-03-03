@@ -6,6 +6,7 @@ import User from "../models/User";
 import { ErrorMessageI } from "../middlewares/errorHandler";
 import { SuccessMessageI } from "../app";
 import "dotenv/config";
+import passwordValidator from "../utils/passwordValidator";
 
 const PASSWORD_SECRET = process.env.PASSWORD_SECRET as string;
 const TOKEN_SECRET = process.env.TOKEN_SECRET as string;
@@ -30,7 +31,20 @@ class AuthController {
         try {
             const { email, firstName, lastName, password } = req.body;
             if (!(email && firstName && lastName && password)) {
-                const errorMessage: ErrorMessageI = { type: "error", message: "Missing required parameter", code: 400 };
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Missing required parameter",
+                    code: 400,
+                };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+            if (!passwordValidator.validate(password)) {
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message:
+                        "Password must contain at least 8 characters, including uppercase, lowercase, numbers and must not contain spaces",
+                    code: 400,
+                };
                 return res.status(errorMessage.code).send(errorMessage);
             }
 
@@ -106,7 +120,11 @@ class AuthController {
     async logout(req: Request, res: Response, next: NextFunction) {
         try {
             res.cookie("token", "", { maxAge: 0 });
-            const successMessage: SuccessMessageI = { type: "success", message: "Logged out successfully", code: 200 };
+            const successMessage: SuccessMessageI = {
+                type: "success",
+                message: "Logged out successfully",
+                code: 200,
+            };
             res.status(successMessage.code).send(successMessage);
         } catch (error) {
             next(error);

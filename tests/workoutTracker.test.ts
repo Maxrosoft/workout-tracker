@@ -23,7 +23,7 @@ describe("Workout Tracker API", () => {
             email: "test@test.com",
             firstName: "Test",
             lastName: "Test",
-            password: "test",
+            password: "1234Test",
         };
 
         const signupResponse: any = await request(app)
@@ -39,6 +39,30 @@ describe("Workout Tracker API", () => {
                 ?.split(";")[0]
                 .split("=")[1];
         }
+    });
+
+    it("should reject weak password", async () => {
+        const signupPayload = {
+            email: "weak@password.com",
+            firstName: "Test",
+            lastName: "WeakPassword",
+            password: "1234",
+        };
+
+        const response: any = await request(app)
+            .post("/signup")
+            .set("accept", "application/json")
+            .send(signupPayload);
+
+        expect(response.status).to.equal(400);
+        expect(response.body).to.have.property("type");
+        expect(response.body.type).to.equal("error");
+        expect(response.body).to.have.property("message");
+        expect(response.body.message).to.equal(
+            "Password must contain at least 8 characters, including uppercase, lowercase, numbers and must not contain spaces"
+        );
+        expect(response.body).to.have.property("code");
+        expect(response.body.code).to.equal(400);
     });
 
     it("should create a workout", async () => {
