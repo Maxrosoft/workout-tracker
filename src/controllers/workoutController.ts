@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { literal, Op } from "sequelize";
 import { ErrorMessageI } from "../middlewares/errorHandler";
 import { SuccessMessageI } from "../app";
 import Workout from "../models/Workout";
@@ -6,6 +7,9 @@ import Exercise from "../models/Exercise";
 import Schedule from "../models/Schedule";
 import Comment from "../models/Comment";
 import sequelize from "../config/sequelize";
+import "dotenv/config";
+
+const ADMIN_PASSWORD: string = process.env.ADMIN_PASSWORD as string;
 
 class WorkoutController {
     async createWorkout(req: Request, res: Response, next: NextFunction) {
@@ -193,6 +197,7 @@ class WorkoutController {
         try {
             const userId = (req as any).userId;
             const { workoutId } = req.params;
+            const { adminPassword } = req.body;
 
             const { date, time } = req.body;
 
@@ -209,7 +214,10 @@ class WorkoutController {
             const scheduleDate = new Date(dateTimeString);
             const now = new Date();
 
-            if (scheduleDate.getTime() < now.getTime()) {
+            if (
+                !(adminPassword && adminPassword === ADMIN_PASSWORD) &&
+                scheduleDate.getTime() < now.getTime()
+            ) {
                 const errorMessage: ErrorMessageI = {
                     type: "error",
                     message: "Invalid date",
@@ -227,11 +235,12 @@ class WorkoutController {
             if (foundWorkout) {
                 const t = await sequelize.transaction();
                 try {
-                    await Schedule.destroy({ where: { WorkoutId: foundWorkout.id } });
+                    await Schedule.destroy({ where: { WorkoutId: foundWorkout.id, UserId: userId } });
                     const createdSchedule: any = await Schedule.create({
                         date,
                         time,
                         WorkoutId: foundWorkout.id,
+                        UserId: userId,
                     });
 
                     await t.commit();
@@ -313,6 +322,58 @@ class WorkoutController {
                 };
                 return res.status(errorMessage.code).send(errorMessage);
             }
+        } catch (error) {
+            next(error);
+        }
+    }
+
+    async listWorkouts(req: Request, res: Response, next: NextFunction) {
+        try {
+            const userId = (req as any).userId;
+            const { status } = req.query;
+            const { sort } = req.query;
+            if (
+                !status ||
+                !["past", "pending"].includes(status as string) ||
+                !["asc", "desc"].includes(sort as string)
+            ) {
+                const errorMessage: ErrorMessageI = {
+                    type: "error",
+                    message: "Missing required query parameter",
+                    code: 400,
+                };
+                return res.status(errorMessage.code).send(errorMessage);
+            }
+
+            let schedules: any[] = [];
+
+            if (status === "past") {
+                schedules = await Schedule.findAll({
+                    where: {
+                        [Op.and]: [literal(`(date || ' ' || time)::timestamp < NOW()`), { UserId: userId }],
+                    },
+                    order: [literal(`(date || ' ' || time)::timestamp ${(sort as string).toUpperCase()}`)],
+                    include: [{ model: Workout }],
+                });
+            } else if (status === "pending") {
+                schedules = await Schedule.findAll({
+                    where: {
+                        [Op.and]: [literal(`(date || ' ' || time)::timestamp >= NOW()`), { UserId: userId }],
+                    },
+                    order: [literal(`(date || ' ' || time)::timestamp ${(sort as string).toUpperCase()}`)],
+                    include: [{ model: Workout }],
+                });
+            }
+
+            const successMessage: SuccessMessageI = {
+                type: "success",
+                message: "Workouts listed successfully",
+                data: {
+                    schedules,
+                },
+                code: 200,
+            };
+            res.status(successMessage.code).send(successMessage);
         } catch (error) {
             next(error);
         }

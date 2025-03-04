@@ -161,7 +161,6 @@ describe("Workout Tracker API", () => {
         expect(response.body.code).to.equal(400);
     });
 
-
     it("should add a schedule", async () => {
         const schedulePayload = {
             date: "2100-01-01",
@@ -215,6 +214,25 @@ describe("Workout Tracker API", () => {
         expect(response.body.data).to.have.property("UserId");
         expect(response.body.data).to.have.property("comments");
         expect(response.body.data.comments.length).to.be.greaterThan(0);
+    });
+
+    it("should list workouts", async () => {
+        const response = await request(app)
+            .get(`/workout?status=pending&sort=asc`)
+            .set("accept", "application/json")
+            .set("Cookie", `token=${token}`);
+
+        expect(response.status).to.equal(200);
+        expect(response.body).to.have.property("type");
+        expect(response.body.type).to.equal("success");
+        expect(response.body).to.have.property("message");
+        expect(response.body.message).to.equal("Workouts listed successfully");
+        expect(response.body).to.have.property("code");
+        expect(response.body.code).to.equal(200);
+
+        expect(response.body).to.have.property("data");
+        expect(response.body.data).to.have.property("schedules");
+        expect(response.body.data.schedules.length).to.be.greaterThan(0);
     });
 
     it("should delete a workout", async () => {

@@ -18,5 +18,6 @@ workoutRouter.post(
     authenticateToken as any,
     workoutController.addComment as any
 );
+workoutRouter.get("/workout", authenticateToken as any, workoutController.listWorkouts as any)
 
 export default workoutRouter;

@@ -5,7 +5,8 @@
     "main": "./src/app.ts",
     "scripts": {
         "start": "nodemon ./src/app.ts",
-        "test": "tsx ./node_modules/.bin/mocha ./tests/workoutTracker.test.ts"
+        "test": "tsx ./node_modules/.bin/mocha ./tests/workoutTracker.test.ts",
+        "seed": "tsx ./scripts/populateDatabase.ts"
     },
     "keywords": [],
     "author": "",

@@ -1,6 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/sequelize";
 import Workout from "./Workout";
+import User from "./User";
 
 const Schedule = sequelize.define(
     "Schedule",
@@ -25,6 +26,9 @@ const Schedule = sequelize.define(
 
 Schedule.belongsTo(Workout, { foreignKey: "WorkoutId", onDelete: "CASCADE", hooks: true });
 Workout.hasMany(Schedule, { foreignKey: "WorkoutId", onDelete: "CASCADE" });
+
+Schedule.belongsTo(User, { foreignKey: "UserId", onDelete: "CASCADE", hooks: true });
+User.hasMany(Schedule, { foreignKey: "UserId", onDelete: "CASCADE" });
 
 export default Schedule;
 
